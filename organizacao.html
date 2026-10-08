@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Minha organização</title>
+<style>
+:root{--bg:#faf8f5;--card:#fff;--tx:#231f1b;--mu:#7a726a;--ac:#c8553d;--bd:#e8e2da;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1917;--card:#262321;--tx:#f0ebe4;--mu:#9d948a;--ac:#e0765f;--bd:#3a3633}}
+:root[data-theme="dark"]{--bg:#1b1917;--card:#262321;--tx:#f0ebe4;--mu:#9d948a;--ac:#e0765f;--bd:#3a3633}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 -apple-system,system-ui,"Segoe UI",sans-serif}
+main{max-width:640px;margin:0 auto;padding:16px}
+h1{font:600 24px Georgia,serif;margin:4px 0 12px}
+nav{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px}
+nav button{flex:1;white-space:nowrap;padding:9px 10px;border:1px solid var(--bd);background:var(--card);color:var(--mu);border-radius:20px;font:inherit;font-size:14px}
+nav button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.form{display:grid;gap:8px;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:14px}
+.row{display:flex;gap:8px}
+input,select,textarea{width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit;font-size:15px}
+input[type=checkbox]{width:22px;height:22px;flex:none}
+.add{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:10px 14px;font:inherit;font-weight:600}
+.item,.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:center}
+.card{display:block}
+.card h3{margin:0 0 4px;font-size:17px}
+.done span{text-decoration:line-through;color:var(--mu)}
+.item span{flex:1}
+small,.tag{color:var(--mu);font-size:12px}
+.x,.lnk{background:none;border:0;color:var(--mu);font:inherit;font-size:14px;padding:4px}
+.x{font-size:20px}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.sum div{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px;text-align:center;font-size:13px;color:var(--mu)}
+.sum b{display:block;font-size:15px;color:var(--tx)}
+.pos{color:#2e8b57}.neg{color:var(--ac)}
+.empty{text-align:center;color:var(--mu);padding:20px}
+</style></head><body><main>
+<h1>Minha organização</h1>
+<nav id="nav"></nav>
+<div id="view"></div>
+</main>
+<script>
+let S={tasks:[],fin:[],places:[],media:[]},tab='tasks';
+const CATS=['Alimentação','Transporte','Moradia','Saúde','Lazer','Educação','Compras','Assinaturas','Salário','Outros'];
+try{const r=localStorage.getItem('org1');if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+const save=()=>{try{localStorage.setItem('org1',JSON.stringify(S))}catch(e){}};
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const v=id=>document.getElementById(id).value.trim();
+const brl=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const TABS={tasks:'Tarefas',fin:'Finanças',places:'Lugares',media:'Filmes e séries'};
+const del=(k,i)=>`<button class="x" data-a="del" data-k="${k}" data-i="${i}">×</button>`;
+const empty='<div class="empty">Nada por aqui ainda.</div>';
+
+function render(){
+  document.getElementById('nav').innerHTML=Object.entries(TABS).map(([k,n])=>`<button class="${k===tab?'on':''}" data-a="tab" data-t="${k}">${n}</button>`).join('');
+  let h='';
+  if(tab==='tasks'){
+    h=`<div class="form"><div class="row"><input id="a1" placeholder="Nova tarefa…"><select id="a2" style="width:auto"><option>Tarefa</option><option>Rotina</option></select></div><button class="add" data-a="addT">Adicionar</button></div>`;
+    h+=S.tasks.map((t,i)=>`<div class="item ${t.done?'done':''}"><input type="checkbox" ${t.done?'checked':''} data-a="tog" data-k="tasks" data-i="${i}"><span>${esc(t.text)} <small class="tag">${esc(t.kind)}</small></span>${del('tasks',i)}</div>`).join('')||empty;
+  }else if(tab==='fin'){
+    const inn=S.fin.filter(f=>f.tipo==='Entrada').reduce((a,f)=>a+f.val,0),out=S.fin.filter(f=>f.tipo==='Saída').reduce((a,f)=>a+f.val,0),sal=inn-out;
+    h=`<div class="sum"><div>Entradas<b class="pos">${brl(inn)}</b></div><div>Saídas<b class="neg">${brl(out)}</b></div><div>Saldo<b>${brl(sal)}</b></div></div>`;
+    h+=`<div class="form"><input id="a1" placeholder="Descrição"><div class="row"><input id="a2" type="number" step="0.01" inputmode="decimal" placeholder="Valor"><select id="a3"><option>Saída</option><option>Entrada</option></select></div><select id="a4">${CATS.map(c=>`<option>${c}</option>`).join('')}</select><button class="add" data-a="addF">Adicionar</button></div>`;
+    if(S.fin.length){
+      const bycat={};S.fin.forEach(f=>{bycat[f.cat||'Outros']=(bycat[f.cat||'Outros']||0)+(f.tipo==='Saída'?f.val:0)});
+      const rows=Object.entries(bycat).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+      if(rows.length)h+=`<div class="card">`+rows.map(([c,v])=>`<div class="row" style="justify-content:space-between"><small>${esc(c)}</small><small>${brl(v)}</small></div>`).join('')+`</div>`;
+    }
+    h+=S.fin.map((f,i)=>`<div class="item"><span>${esc(f.desc)}<br><small>${f.tipo} · ${esc(f.cat||'Outros')}</small></span><b class="${f.tipo==='Entrada'?'pos':'neg'}">${brl(f.val)}</b>${del('fin',i)}</div>`).join('')||empty;
+  }else if(tab==='places'){
+    h=`<div class="form"><input id="a1" placeholder="Nome do lugar"><div class="row"><select id="a2"><option>Quero ir</option><option>Já fui</option></select><select id="a3"><option value="0">Nota</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div><input id="a4" placeholder="Indicação de quem?"><input id="a5" placeholder="Review dos pratos"><input id="a6" placeholder="Review do atendimento"><button class="add" data-a="addP">Adicionar</button></div>`;
+    h+=S.places.map((p,i)=>`<div class="card"><div class="row" style="justify-content:space-between"><h3>${esc(p.nome)}</h3>${del('places',i)}</div><small>${p.status}${p.nota>0?' · '+'★'.repeat(p.nota):''}${p.quem?' · indicação: '+esc(p.quem):''}</small>${p.pratos?`<div>🍽️ ${esc(p.pratos)}</div>`:''}${p.atend?`<div>🙋 ${esc(p.atend)}</div>`:''}${p.status==='Quero ir'?`<button class="lnk" data-a="visit" data-i="${i}">Marcar como visitado</button>`:''}</div>`).join('')||empty;
+  }else{
+    h=`<div class="form"><div class="row"><input id="a1" placeholder="Título"><select id="a2" style="width:auto"><option>Filme</option><option>Série</option></select></div><button class="add" data-a="addM">Adicionar</button></div>`;
+    h+=S.media.map((m,i)=>`<div class="item ${m.done?'done':''}"><input type="checkbox" ${m.done?'checked':''} data-a="tog" data-k="media" data-i="${i}"><span>${esc(m.text)} <small class="tag">${m.kind}${m.done?' · assistido':''}</small></span>${del('media',i)}</div>`).join('')||empty;
+  }
+  document.getElementById('view').innerHTML=h;
+}
+
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;
+  const a=b.dataset.a,i=+b.dataset.i;
+  if(a==='tab')tab=b.dataset.t;
+  else if(a==='del')S[b.dataset.k].splice(i,1);
+  else if(a==='tog'){const o=S[b.dataset.k][i];o.done=!o.done}
+  else if(a==='visit')S.places[i].status='Já fui';
+  else if(a==='addT'){const x=v('a1');if(!x)return;S.tasks.unshift({text:x,kind:v('a2'),done:false})}
+  else if(a==='addF'){const x=v('a1'),n=parseFloat(v('a2').replace(',','.'));if(!x||isNaN(n))return;S.fin.unshift({desc:x,val:Math.abs(n),tipo:v('a3'),cat:v('a4')})}
+  else if(a==='addP'){const x=v('a1');if(!x)return;S.places.unshift({nome:x,status:v('a2'),nota:+v('a3'),quem:v('a4'),pratos:v('a5'),atend:v('a6')})}
+  else if(a==='addM'){const x=v('a1');if(!x)return;S.media.unshift({text:x,kind:v('a2'),done:false})}
+  save();render();
+});
+render();
+</script></body></html>
